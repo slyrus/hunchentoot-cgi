@@ -72,49 +72,51 @@ type via the file's suffix."
                              (mime-type path)
                              "application/octet-stream"))
     (handle-if-modified-since time)
+
     (let ((out tbnl::*hunchentoot-stream*)
           (env (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
                        `(("SERVER_SOFTWARE" . "hunchentoot/0.15")
                          ("SERVER_NAME" . ,(host-name))
                          ("GATEWAY_INTERFACE" . "CGI/1.1")
                          
-                         ("SERVER_PROTOCOL" . ,(tbnl:server-protocol))
+                         ("SERVER_PROTOCOL" . ,(tbnl:server-protocol*))
                          ("SERVER_PORT" . ,(nth-value 1 (host-name-and-port)))
-                         ("REQUEST_METHOD" . ,(tbnl:request-method))
+                         ("REQUEST_METHOD" . ,(tbnl:request-method*))
                          #+nil ("PATH_INFO" . "FIXME!")
                          #+nil ("PATH_TRANSLATED" . "FIXME!")
-                         ("SCRIPT_NAME" . ,(tbnl:script-name))
-                         ("QUERY_STRING" . ,(tbnl:query-string))
+                         ("SCRIPT_NAME" . ,(tbnl:script-name*))
+                         ("QUERY_STRING" . ,(tbnl:query-string*))
                          #+nil ("REMOTE_HOST" . "FIXME!")
-                         ("REMOTE_ADDR" . ,(tbnl:remote-addr))
+                         ("REMOTE_ADDR" . ,(tbnl:remote-addr*))
                          #+nil ("REMOTE_USER" . "FIXME!")
                          #+nil ("REMOTE_IDENT" . "FIXME!")
                          
                          #+nil ("AUTH_TYPE" . "FIX")
                          ("HTTP_HOST" . ,(tbnl:host))
-                         ("REQUEST_URI" . ,(tbnl:request-uri))
-                         ("SERVER_ADDR" . ,(tbnl:server-addr))
-                         ("SSL_SESSION_ID" . ,(tbnl:ssl-session-id))
+                         ("REQUEST_URI" . ,(tbnl:request-uri*))
+                         ("SERVER_ADDR" . ,(tbnl:server-address))
                          ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
                          ("HTTP_REFERER" . ,(tbnl:referer))))))
-      #+:clisp
-      (setf (flexi-stream-element-type *hunchentoot-stream*) 'octet)
-      #+:sbcl
+      
+      (setf (tbnl::content-type) "")
+      (with-output-to-string (out)
+        (sb-ext::run-program path nil :output out :environment env))
+      
+      #+nil
       (progn
-        
         (let* ((return-code (tbnl::return-code))
                (reason-phrase (reason-phrase return-code))
                (first-line
                 (format nil "HTTP/1.1 ~D ~A" return-code reason-phrase)))
-          (write-string first-line out)
-          (write-string tbnl::+crlf+ out)
+          (write-sequence (map 'list #'char-code first-line) out)
+          (write-sequence tbnl::+crlf+ out)
           (tbnl::maybe-write-to-header-stream first-line))
         
         (setf tbnl::*headers-sent* t)
         (setf (tbnl::content-type) nil)
         (sb-ext::run-program path nil :output out :environment env)
         nil)
-      #-:sbcl
+      #-sbcl
       (error "Not implemented yet!"))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
@@ -123,7 +125,7 @@ type via the file's suffix."
                (char= (char uri-prefix (1- (length uri-prefix))) #\/))
     (error "~S must be string ending with a slash." uri-prefix))
   (flet ((handler ()
-           (let* ((script-name (url-decode (script-name)))
+           (let* ((script-name (url-decode (script-name*)))
                   (script-path (tbnl::enough-url (ppcre:regex-replace-all "\\\\" script-name "/")
                                            uri-prefix))
                   (script-path-directory (pathname-directory script-path)))
