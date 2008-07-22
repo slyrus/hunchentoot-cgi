@@ -73,9 +73,9 @@ type via the file's suffix."
                              "application/octet-stream"))
     (handle-if-modified-since time)
 
-    (let ((out tbnl::*hunchentoot-stream*)
-          (env (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
-                       `(("SERVER_SOFTWARE" . "hunchentoot/0.15")
+    (let ((env (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
+                       `(("SERVER_SOFTWARE" . (format nil "hunchentoot/~A"
+                                                      hunchentoot-asd:*hunchentoot-version*))
                          ("SERVER_NAME" . ,(host-name))
                          ("GATEWAY_INTERFACE" . "CGI/1.1")
                          
@@ -98,12 +98,40 @@ type via the file's suffix."
                          ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
                          ("HTTP_REFERER" . ,(tbnl:referer))))))
       
-      (setf (tbnl::content-type) "")
-      (with-output-to-string (out)
-        (sb-ext::run-program path nil :output out :environment env))
-      
+
       #+nil
-      (progn
+      (let* ((tbnl::*cgi-hack* t)              
+             (stream (flexi-streams:make-flexi-stream
+                      (tbnl:send-headers)
+                      :external-format tbnl::+latin-1+)))
+        (sb-ext::run-program path nil :output stream :environment env))
+
+
+      #+sbcl
+      (let* ((process (sb-ext::run-program path nil
+                                           :output :stream
+                                           :environment env))
+             (in (sb-ext:process-output process)))
+        (let ((headers
+               (loop for line = (chunga:read-line* in)
+                  until (equal line "")
+                  collect (destructuring-bind
+                                (key val)
+                              (ppcre:split ": " line)
+                            (cons (chunga:as-keyword key) val)))))
+          (let ((type-cons (assoc :content-type headers)))
+            (when type-cons
+              (setf (tbnl:content-type)
+                    (cdr type-cons)))))
+        (let ((out (flexi-streams:make-flexi-stream
+                    (tbnl:send-headers)
+                    :external-format tbnl::+latin-1+)))
+          (do ((c (read-char in) (read-char in)))
+              ((eq c 'eof))
+            (write-char c out))))
+
+      #+nil
+      (let ((out tbnl::*hunchentoot-stream*))
         (let* ((return-code (tbnl::return-code))
                (reason-phrase (reason-phrase return-code))
                (first-line
@@ -116,6 +144,8 @@ type via the file's suffix."
         (setf (tbnl::content-type) nil)
         (sb-ext::run-program path nil :output out :environment env)
         nil)
+
+      
       #-sbcl
       (error "Not implemented yet!"))))
 
