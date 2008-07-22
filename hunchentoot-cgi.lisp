@@ -103,20 +103,20 @@ type via the file's suffix."
                                            :output :stream
                                            :environment env))
              (in (sb-ext:process-output process)))
-        (let ((headers
-               (loop for line = (chunga:read-line* in)
-                  until (equal line "")
-                  collect (destructuring-bind
-                                (key val)
-                              (ppcre:split ": " line)
-                            (cons (chunga:as-keyword key) val)))))
-          (let ((type-cons (assoc :content-type headers)))
-            (when type-cons
-              (setf (tbnl:content-type)
-                    (cdr type-cons)))))
+        (loop for line = (chunga:read-line* in)
+           until (equal line "")
+           do (destructuring-bind
+                    (key val)
+                  (ppcre:split ": " line)
+                (setf (hunchentoot:header-out key) val)))
+        (copy-stream in (flexi-streams:make-flexi-stream
+                               (tbnl:send-headers)
+                               :external-format tbnl::+latin-1+)
+                           'character)
+        #+nil
         (let ((out (flexi-streams:make-flexi-stream
-                    (tbnl:send-headers)
-                    :external-format tbnl::+latin-1+)))
+                          (tbnl:send-headers)
+                         :external-format tbnl::+latin-1+)))
           (do ((c (read-char in) (read-char in)))
               ((eq c 'eof))
             (write-char c out))))

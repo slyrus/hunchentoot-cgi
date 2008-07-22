@@ -28,8 +28,6 @@
 ;;; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;;;
 
-(in-package #:cl-user)
-
 (asdf:defsystem hunchentoot-cgi
   :name "hunchentoot-cgi"
   :author "Cyrus Harmon <ch-lisp@bobobeach.com>"
@@ -44,4 +42,5 @@
    (:static-file "LICENSE")
    (:static-file "NEWS")
    (:cl-source-file "defpackage")
-   (:cl-source-file "hunchentoot-cgi" :depends-on ("defpackage"))))
+   (:cl-source-file "util" :depends-on ("defpackage"))
+   (:cl-source-file "hunchentoot-cgi" :depends-on ("defpackage" "util"))))
