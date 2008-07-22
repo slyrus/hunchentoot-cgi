@@ -96,16 +96,7 @@ type via the file's suffix."
                          ("REQUEST_URI" . ,(tbnl:request-uri*))
                          ("SERVER_ADDR" . ,(tbnl:server-address))
                          ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
-                         ("HTTP_REFERER" . ,(tbnl:referer))))))
-      
-
-      #+nil
-      (let* ((tbnl::*cgi-hack* t)              
-             (stream (flexi-streams:make-flexi-stream
-                      (tbnl:send-headers)
-                      :external-format tbnl::+latin-1+)))
-        (sb-ext::run-program path nil :output stream :environment env))
-
+                         ("HTTP_REFERER" . ,(tbnl:referer))))))      
 
       #+sbcl
       (let* ((process (sb-ext::run-program path nil
@@ -129,22 +120,6 @@ type via the file's suffix."
           (do ((c (read-char in) (read-char in)))
               ((eq c 'eof))
             (write-char c out))))
-
-      #+nil
-      (let ((out tbnl::*hunchentoot-stream*))
-        (let* ((return-code (tbnl::return-code))
-               (reason-phrase (reason-phrase return-code))
-               (first-line
-                (format nil "HTTP/1.1 ~D ~A" return-code reason-phrase)))
-          (write-sequence (map 'list #'char-code first-line) out)
-          (write-sequence tbnl::+crlf+ out)
-          (tbnl::maybe-write-to-header-stream first-line))
-        
-        (setf tbnl::*headers-sent* t)
-        (setf (tbnl::content-type) nil)
-        (sb-ext::run-program path nil :output out :environment env)
-        nil)
-
       
       #-sbcl
       (error "Not implemented yet!"))))
