@@ -101,7 +101,8 @@ type via the file's suffix."
       #+sbcl
       (let* ((process (sb-ext::run-program path nil
                                            :output :stream
-                                           :environment env))
+                                           :environment env
+                                           :wait nil))
              (in (sb-ext:process-output process)))
         (loop for line = (chunga:read-line* in)
            until (equal line "")
