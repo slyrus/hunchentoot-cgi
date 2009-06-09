@@ -61,11 +61,11 @@ type via the file's suffix."
   (unless (or (pathname-name path)
               (pathname-type path))
     ;; not a file
-    (setf (return-code) +http-bad-request+)
+    (setf (return-code*) +http-bad-request+)
     (throw 'handler-done nil))
   (unless (probe-file path)
     ;; does not exist
-    (setf (return-code) +http-not-found+)
+    (setf (return-code*) +http-not-found+)
     (throw 'handler-done nil))
   (let ((time (or (file-write-date path) (get-universal-time))))
     #+nil (setf (content-type) (or content-type
@@ -92,9 +92,9 @@ type via the file's suffix."
                          #+nil ("REMOTE_IDENT" . "FIXME!")
                          
                          #+nil ("AUTH_TYPE" . "FIX")
-                         ("HTTP_HOST" . ,(tbnl:host))
+                         ("HTTP_HOST" . ,(tbnl:acceptor-address tbnl:*acceptor*))
                          ("REQUEST_URI" . ,(tbnl:request-uri*))
-                         ("SERVER_ADDR" . ,(tbnl:server-address))
+                         ("SERVER_ADDR" . ,(tbnl:acceptor-address tbnl:*acceptor*))
                          ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
                          ("HTTP_REFERER" . ,(tbnl:referer))))))      
 
@@ -141,7 +141,7 @@ type via the file's suffix."
                               (eq (first script-path-directory) :relative)
                               (loop for component in (rest script-path-directory)
                                  always (stringp component))))
-               (setf (return-code) +http-forbidden+)
+               (setf (return-code*) +http-forbidden+)
                (throw 'handler-done nil))
              (handle-cgi-script (merge-pathnames script-path base-path) content-type))))
     (create-prefix-dispatcher uri-prefix #'handler)))
