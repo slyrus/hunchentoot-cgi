@@ -57,7 +57,8 @@ value, rather than either host or host:port if the port is specified."
 denoted by PATH.  Send a content type header corresponding to
 CONTENT-TYPE or \(if that is NIL) tries to determine the content
 type via the file's suffix."
-  (declare (ignore content-type))
+  (declare (ignore content-type)
+           (optimize (debug 3)))
   (unless (or (pathname-name path)
               (pathname-type path))
     ;; not a file
@@ -69,8 +70,8 @@ type via the file's suffix."
     (throw 'handler-done nil))
   (let ((time (or (file-write-date path) (get-universal-time))))
     #+nil (setf (content-type) (or content-type
-                             (mime-type path)
-                             "application/octet-stream"))
+                                   (mime-type path)
+                                   "application/octet-stream"))
     (handle-if-modified-since time)
 
     (let ((env (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
@@ -99,25 +100,32 @@ type via the file's suffix."
                          ("HTTP_REFERER" . ,(tbnl:referer))))))      
 
       #+sbcl
-      (let* ((process (sb-ext::run-program path nil
-                                           :output :stream
-                                           :environment env
-                                           :wait nil))
-             (in (sb-ext:process-output process)))
-        (loop for line = (chunga:read-line* in)
-           until (equal line "")
-           do (destructuring-bind
-                    (key val)
-                  (ppcre:split ": " line)
-                (setf (hunchentoot:header-out key) val)))
-        (copy-stream in (flexi-streams:make-flexi-stream
-                               (tbnl:send-headers)
-                               :external-format tbnl::+latin-1+)
-                           'character)
+      (let ((process (sb-ext::run-program path nil
+                                          :output :stream
+                                          :environment env
+                                          :wait nil)))
+        (when process
+          (unwind-protect
+               (let ((in (sb-ext:process-output process)))
+                 (loop for line = (chunga:read-line* in)
+                    until (equal line "")
+                    do (destructuring-bind
+                             (key val)
+                           (ppcre:split ": " line)
+                         (setf (hunchentoot:header-out key) val)))
+                 (let ((out (flexi-streams:make-flexi-stream
+                             (tbnl:send-headers)
+                             :external-format tbnl::+latin-1+)))
+                   #+nil (print (sb-ext:process-status process) out)
+                   (copy-stream in out 'character)
+                   #+nil (print (sb-ext:process-status process) out)))
+            (sb-ext:process-wait process)
+            (sb-ext:process-close process)))
+
         #+nil
         (let ((out (flexi-streams:make-flexi-stream
-                          (tbnl:send-headers)
-                         :external-format tbnl::+latin-1+)))
+                    (tbnl:send-headers)
+                    :external-format tbnl::+latin-1+)))
           (do ((c (read-char in) (read-char in)))
               ((eq c 'eof))
             (write-char c out))))
