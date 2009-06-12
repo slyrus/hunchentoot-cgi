@@ -101,7 +101,7 @@ type via the file's suffix."
                      ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
                      ("HTTP_REFERER" . ,(tbnl:referer))))))      
       
-      (with-input-from-process (in path nil env)
+      (with-input-from-program (in path nil env)
         (loop for line = (chunga:read-line* in)
            until (equal line "")
            do (destructuring-bind
