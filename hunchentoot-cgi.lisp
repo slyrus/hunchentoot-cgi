@@ -98,40 +98,18 @@ type via the file's suffix."
                          ("SERVER_ADDR" . ,(tbnl:acceptor-address tbnl:*acceptor*))
                          ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
                          ("HTTP_REFERER" . ,(tbnl:referer))))))      
-
-      #+sbcl
-      (let ((process (sb-ext::run-program path nil
-                                          :output :stream
-                                          :environment env
-                                          :wait nil)))
-        (when process
-          (unwind-protect
-               (let ((in (sb-ext:process-output process)))
-                 (loop for line = (chunga:read-line* in)
-                    until (equal line "")
-                    do (destructuring-bind
-                             (key val)
-                           (ppcre:split ": " line)
-                         (setf (hunchentoot:header-out key) val)))
-                 (let ((out (flexi-streams:make-flexi-stream
-                             (tbnl:send-headers)
-                             :external-format tbnl::+latin-1+)))
-                   #+nil (print (sb-ext:process-status process) out)
-                   (copy-stream in out 'character)
-                   #+nil (print (sb-ext:process-status process) out)))
-            (sb-ext:process-wait process)
-            (sb-ext:process-close process)))
-
-        #+nil
+      
+      (with-input-from-process (in path nil env)
+        (loop for line = (chunga:read-line* in)
+           until (equal line "")
+           do (destructuring-bind
+                    (key val)
+                  (ppcre:split ": " line)
+                (setf (hunchentoot:header-out key) val)))
         (let ((out (flexi-streams:make-flexi-stream
                     (tbnl:send-headers)
-                    :external-format tbnl::+latin-1+)))
-          (do ((c (read-char in) (read-char in)))
-              ((eq c 'eof))
-            (write-char c out))))
-      
-      #-sbcl
-      (error "Not implemented yet!"))))
+                    :external-format tbnl::+latin-1+)))                   
+          (copy-stream in out 'character))))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
   (unless (and (stringp uri-prefix)
