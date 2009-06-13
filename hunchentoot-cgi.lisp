@@ -102,16 +102,17 @@ type via the file's suffix."
                      ("HTTP_REFERER" . ,(tbnl:referer))))))      
       
       (with-input-from-program (in path nil env)
-        (loop for line = (chunga:read-line* in)
-           until (equal line "")
-           do (destructuring-bind
-                    (key val)
-                  (ppcre:split ": " line)
-                (setf (hunchentoot:header-out key) val)))
-        (let ((out (flexi-streams:make-flexi-stream
-                    (tbnl:send-headers)
-                    :external-format tbnl::+latin-1+)))                   
-          (copy-stream in out 'character))))))
+        (chunga:with-character-stream-semantics
+          (loop for line = (chunga:read-line* in)
+             until (equal line "")
+             do (destructuring-bind
+                      (key val)
+                    (ppcre:split ": " line)
+                  (setf (hunchentoot:header-out key) val)))
+          (let ((out (flexi-streams:make-flexi-stream
+                      (tbnl:send-headers)
+                      :external-format tbnl::+latin-1+)))                   
+            (copy-stream in out 'character)))))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
   (unless (and (stringp uri-prefix)
