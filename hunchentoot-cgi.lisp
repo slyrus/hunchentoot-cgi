@@ -101,18 +101,23 @@ type via the file's suffix."
                      ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
                      ("HTTP_REFERER" . ,(tbnl:referer))))))      
       
-      (with-input-from-program (in path nil env)
-        (chunga:with-character-stream-semantics
-          (loop for line = (chunga:read-line* in)
-             until (equal line "")
-             do (destructuring-bind
-                      (key val)
-                    (ppcre:split ": " line)
-                  (setf (hunchentoot:header-out key) val))))
-        (let ((out (flexi-streams:make-flexi-stream
-                    (tbnl:send-headers)
-                    :external-format tbnl::+latin-1+)))                   
-          (copy-stream in out 'character))))))
+      (handler-case
+	  (with-input-from-program (in path nil env)
+	    (chunga:with-character-stream-semantics
+		(loop for line = (chunga:read-line* in)
+		   until (equal line "")
+		   do (destructuring-bind
+			    (key val)
+			  (ppcre:split ": " line :limit 2)
+			(setf (hunchentoot:header-out key) val))))
+	    (let ((out (flexi-streams:make-flexi-stream
+			(tbnl:send-headers)
+			:external-format tbnl::+latin-1+)))                   
+	      (copy-stream in out 'character)))
+	(error (error)
+	  (tbnl:log-message :error
+			    "error in handle-cgi-script from URL ~A"
+			    (tbnl:request-uri*)))))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
   (unless (and (stringp uri-prefix)
