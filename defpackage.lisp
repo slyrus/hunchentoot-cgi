@@ -32,5 +32,6 @@
 
 (defpackage #:hunchentoot-cgi
   (:use #:cl #:tbnl)
-  #+nil (:export #:foo))
+  (:export #:create-cgi-dispatcher-and-handler))
+
 
