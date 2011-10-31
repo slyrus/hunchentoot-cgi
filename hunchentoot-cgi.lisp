@@ -115,9 +115,9 @@ type via the file's suffix."
 			:external-format tbnl::+latin-1+)))                   
 	      (copy-stream in out 'character)))
 	(error (error)
-	  (tbnl:log-message :error
-			    "error in handle-cgi-script from URL ~A"
-			    (tbnl:request-uri*)))))))
+	  (tbnl:log-message* :error
+                             "error in handle-cgi-script from URL ~A"
+                             (tbnl:request-uri*)))))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
   (unless (and (stringp uri-prefix)
