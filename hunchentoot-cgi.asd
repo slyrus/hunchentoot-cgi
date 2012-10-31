@@ -35,7 +35,7 @@
                  (vers (merge-pathnames "version.lisp-expr" *load-truename*))
                (read vers))
   :licence "BSD"
-  :depends-on (hunchentoot)
+  :depends-on (hunchentoot puri)
   :components
   ((:static-file "version" :pathname #p"version.lisp-expr")
    (:static-file "README")

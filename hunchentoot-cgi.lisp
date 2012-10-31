@@ -115,6 +115,7 @@ type via the file's suffix."
 			:external-format tbnl::+latin-1+)))                   
 	      (copy-stream in out 'character)))
 	(error (error)
+          (declare (ignore error))
 	  (tbnl:log-message* :error
                              "error in handle-cgi-script from URL ~A"
                              (tbnl:request-uri*)))))))
@@ -126,8 +127,10 @@ type via the file's suffix."
     (error "~S must be string ending with a slash." uri-prefix))
   (flet ((handler ()
            (let* ((script-name (url-decode (script-name*)))
-                  (script-path (tbnl::enough-url (ppcre:regex-replace-all "\\\\" script-name "/")
-                                           uri-prefix))
+                  (script-path (puri:render-uri
+                                (puri:enough-uri (ppcre:regex-replace-all "\\\\" script-name "/")
+                                                 uri-prefix)
+                                nil))
                   (script-path-directory (pathname-directory script-path)))
              (unless (or (stringp script-path-directory)
                          (null script-path-directory)
