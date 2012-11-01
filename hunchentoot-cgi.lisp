@@ -57,17 +57,16 @@ value, rather than either host or host:port if the port is specified."
 denoted by PATH.  Send a content type header corresponding to
 CONTENT-TYPE or \(if that is NIL) tries to determine the content
 type via the file's suffix."
-  (declare (ignore content-type)
-           (optimize (debug 3)))
+  (declare (ignore content-type))
   (unless (or (pathname-name path)
               (pathname-type path))
     ;; not a file
     (setf (return-code*) +http-bad-request+)
-    (throw 'handler-done nil))
+    (abort-request-handler))
   (unless (probe-file path)
     ;; does not exist
     (setf (return-code*) +http-not-found+)
-    (throw 'handler-done nil))
+    (abort-request-handler))
   (let ((time (or (file-write-date path) (get-universal-time))))
     #+nil (setf (content-type) (or content-type
                                    (mime-type path)
@@ -139,7 +138,7 @@ type via the file's suffix."
                               (loop for component in (rest script-path-directory)
                                  always (stringp component))))
                (setf (return-code*) +http-forbidden+)
-               (throw 'handler-done nil))
+               (abort-request-handler))
              (handle-cgi-script (merge-pathnames script-path base-path) content-type))))
     (create-prefix-dispatcher uri-prefix #'handler)))
 
