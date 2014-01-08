@@ -31,16 +31,10 @@
 (asdf:defsystem hunchentoot-cgi
   :name "hunchentoot-cgi"
   :author "Cyrus Harmon <ch-lisp@bobobeach.com>"
-  :version #.(with-open-file
-                 (vers (merge-pathnames "version.lisp-expr" *load-truename*))
-               (read vers))
+  :version "0.2.1"
   :licence "BSD"
   :depends-on (hunchentoot puri)
   :components
-  ((:static-file "version" :pathname #p"version.lisp-expr")
-   (:static-file "README")
-   (:static-file "LICENSE")
-   (:static-file "NEWS")
-   (:cl-source-file "defpackage")
+  ((:cl-source-file "defpackage")
    (:cl-source-file "util" :depends-on ("defpackage"))
    (:cl-source-file "hunchentoot-cgi" :depends-on ("defpackage" "util"))))
