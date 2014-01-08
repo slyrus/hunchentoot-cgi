@@ -76,8 +76,7 @@ type via the file's suffix."
     (let ((env
            (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
                    `(("SERVER_SOFTWARE" 
-                      . (format nil "hunchentoot/~A"
-                                hunchentoot-asd:*hunchentoot-version*))
+                      . (format nil "hunchentoot/~A" tbnl:*hunchentoot-version*))
                      ("SERVER_NAME" . ,(host-name))
                      ("GATEWAY_INTERFACE" . "CGI/1.1")
                          
