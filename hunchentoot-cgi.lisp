@@ -72,51 +72,57 @@ type via the file's suffix."
                                    (mime-type path)
                                    "application/octet-stream"))
     (handle-if-modified-since time)
-
-    (let ((env
-           (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
-                   `(("SERVER_SOFTWARE" 
-                      . (format nil "hunchentoot/~A" tbnl:*hunchentoot-version*))
-                     ("SERVER_NAME" . ,(host-name))
-                     ("GATEWAY_INTERFACE" . "CGI/1.1")
+    (let* ((cgi-input (tbnl:raw-post-data :want-stream t))
+           (input-length (flexi-streams:flexi-stream-bound cgi-input)))
+      (let ((env
+             (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
+                     `(("SERVER_SOFTWARE" 
+                        . (format nil "hunchentoot/~A" tbnl:*hunchentoot-version*))
+                       ("SERVER_NAME" . ,(host-name))
+                       ("GATEWAY_INTERFACE" . "CGI/1.1")
                          
-                     ("SERVER_PROTOCOL" . ,(tbnl:server-protocol*))
-                     ("SERVER_PORT" . ,(nth-value 1 (host-name-and-port)))
-                     ("REQUEST_METHOD" . ,(tbnl:request-method*))
-                     #+nil ("PATH_INFO" . "FIXME!")
-                     #+nil ("PATH_TRANSLATED" . "FIXME!")
-                     ("SCRIPT_NAME" . ,(tbnl:script-name*))
-                     ("QUERY_STRING" . ,(tbnl:query-string*))
-                     #+nil ("REMOTE_HOST" . "FIXME!")
-                     ("REMOTE_ADDR" . ,(tbnl:remote-addr*))
-                     #+nil ("REMOTE_USER" . "FIXME!")
-                     #+nil ("REMOTE_IDENT" . "FIXME!")
+                       ("SERVER_PROTOCOL" . ,(tbnl:server-protocol*))
+                       ("SERVER_PORT" . ,(nth-value 1 (host-name-and-port)))
+                       ("REQUEST_METHOD" . ,(tbnl:request-method*))
+                       #+nil ("PATH_INFO" . "FIXME!")
+                       #+nil ("PATH_TRANSLATED" . "FIXME!")
+                       ("SCRIPT_NAME" . ,(tbnl:script-name*))
+                       ("QUERY_STRING" . ,(tbnl:query-string*))
+                       #+nil ("REMOTE_HOST" . "FIXME!")
+                       ("REMOTE_ADDR" . ,(tbnl:remote-addr*))
+                       #+nil ("REMOTE_USER" . "FIXME!")
+                       #+nil ("REMOTE_IDENT" . "FIXME!")
                          
-                     #+nil ("AUTH_TYPE" . "FIX")
-                     ("HTTP_HOST" . ,(tbnl:acceptor-address tbnl:*acceptor*))
-                     ("REQUEST_URI" . ,(tbnl:request-uri*))
-                     ("SERVER_ADDR" . ,(tbnl:acceptor-address tbnl:*acceptor*))
-                     ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
-                     ("HTTP_REFERER" . ,(tbnl:referer))))))      
-      
-      (handler-case
-	  (with-input-from-program (in path nil env)
-	    (chunga:with-character-stream-semantics
-		(loop for line = (chunga:read-line* in)
-		   until (equal line "")
-		   do (destructuring-bind
-			    (key val)
-			  (ppcre:split ": " line :limit 2)
-			(setf (hunchentoot:header-out key) val))))
-	    (let ((out (flexi-streams:make-flexi-stream
-			(tbnl:send-headers)
-			:external-format tbnl::+latin-1+)))                   
-	      (copy-stream in out 'character)))
-	(error (error)
-          (declare (ignore error))
-	  (tbnl:log-message* :error
-                             "error in handle-cgi-script from URL ~A"
-                             (tbnl:request-uri*)))))))
+                       #+nil ("AUTH_TYPE" . "FIX")
+                       ("HTTP_HOST" . ,(tbnl:acceptor-address tbnl:*acceptor*))
+                       ("REQUEST_URI" . ,(tbnl:request-uri*))
+                       ("SERVER_ADDR" . ,(tbnl:acceptor-address tbnl:*acceptor*))
+                       ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
+                       ("HTTP_REFERER" . ,(tbnl:referer))
+                       ("CONTENT_LENGTH" . ,input-length)
+                       ("CONTENT_TYPE" . ,content-type)))))      
+        (handler-case
+            (with-program (path nil env
+                                :output process-output
+                                :input (if (open-stream-p cgi-input)
+                                           (flexi-streams:flexi-stream-stream cgi-input)))
+              (chunga:with-character-stream-semantics
+                (loop for line = (chunga:read-line* process-output)
+                   until (equal line "")
+                   do (destructuring-bind
+                            (key val)
+                          (ppcre:split ": " line :limit 2)
+                        (setf (hunchentoot:header-out key) val))))
+              (let ((http-out (flexi-streams:make-flexi-stream
+                               (tbnl:send-headers)
+                               :external-format tbnl::+latin-1+)))                   
+                (copy-stream process-output http-out 'character)))
+          (error (error)
+            (tbnl:log-message* :error
+                               "error in handle-cgi-script from URL ~A"
+                               (tbnl:request-uri*))
+            ;; FiXME don't forget to remove this error call later!
+            (error error)))))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
   (unless (and (stringp uri-prefix)
