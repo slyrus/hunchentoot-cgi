@@ -68,9 +68,9 @@ type via the file's suffix."
     (setf (return-code*) +http-not-found+)
     (abort-request-handler))
   (let ((time (or (file-write-date path) (get-universal-time))))
-    #+nil (setf (content-type) (or content-type
-                                   (mime-type path)
-                                   "application/octet-stream"))
+    (setf content-type (or content-type
+                           (mime-type path)
+                           "application/octet-stream"))
     (handle-if-modified-since time)
     (let* ((post-data (tbnl:raw-post-data :force-binary t))
            (input-length (length post-data)))
