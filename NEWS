@@ -1,2 +1,5 @@
 
-* changes to hunchentoot-cgi 0.1
+* changes to hunchentoot-cgi 0.3
+** support for CGI post requests -- content type, length, etc...
+** bug fixes for better reporting the various CGI environment variables
+
