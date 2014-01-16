@@ -120,7 +120,7 @@ type via the file's suffix."
                    until (equal line "")
                    do (destructuring-bind
                             (key val)
-                          (ppcre:split ": " line :limit 2)
+                          (ppcre:split ":\w*" line :limit 2)
                         (setf (hunchentoot:header-out key) val))))
               (let ((http-out (flexi-streams:make-flexi-stream
                                (tbnl:send-headers)
