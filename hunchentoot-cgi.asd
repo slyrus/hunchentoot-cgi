@@ -31,7 +31,7 @@
 (asdf:defsystem hunchentoot-cgi
   :name "hunchentoot-cgi"
   :author "Cyrus Harmon <ch-lisp@bobobeach.com>"
-  :version "0.2.1"
+  :version "0.3"
   :licence "BSD"
   :depends-on (hunchentoot puri)
   :components
