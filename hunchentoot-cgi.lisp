@@ -72,8 +72,8 @@ type via the file's suffix."
                                    (mime-type path)
                                    "application/octet-stream"))
     (handle-if-modified-since time)
-    (let* ((cgi-input (tbnl:raw-post-data :want-stream t))
-           (input-length (flexi-streams:flexi-stream-bound cgi-input)))
+    (let* ((post-data (tbnl:raw-post-data :force-binary t))
+           (input-length (length post-data)))
       (let ((env
              (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
                      `(("SERVER_SOFTWARE" 
@@ -104,8 +104,10 @@ type via the file's suffix."
         (handler-case
             (with-program (path nil env
                                 :output process-output
-                                :input (if (open-stream-p cgi-input)
-                                           (flexi-streams:flexi-stream-stream cgi-input)))
+                                :input (when post-data
+                                         (flexi-streams:make-flexi-stream
+                                          (flexi-streams:make-in-memory-input-stream post-data)
+                                          :element-type '(unsigned-byte 8))))
               (chunga:with-character-stream-semantics
                 (loop for line = (chunga:read-line* process-output)
                    until (equal line "")
