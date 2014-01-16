@@ -75,7 +75,7 @@ type via the file's suffix."
     (let* ((post-data (tbnl:raw-post-data :force-binary t))
            (input-length (length post-data)))
       (let ((env
-             (mapcar (lambda (x) (format nil "~A=~A" (car x) (cdr x)))
+             (mapcar (lambda (x) (format nil "~A=~@[~A~]" (car x) (cdr x)))
                      `(("SERVER_SOFTWARE" 
                         . ,(format nil "hunchentoot/~A" tbnl:*hunchentoot-version*))
                        ("SERVER_NAME" . ,(host-name))
