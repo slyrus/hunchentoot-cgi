@@ -129,9 +129,7 @@ type via the file's suffix."
           (error (error)
             (tbnl:log-message* :error
                                "error in handle-cgi-script from URL ~A"
-                               (tbnl:request-uri*))
-            ;; FiXME don't forget to remove this error call later!
-            (error error)))))))
+                               (tbnl:request-uri*))))))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
   (declare (ignore content-type))
