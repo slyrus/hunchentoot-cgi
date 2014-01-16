@@ -101,6 +101,14 @@ type via the file's suffix."
                        ("CONTENT_LENGTH" . ,input-length)
                        ("CONTENT_TYPE" . ,content-type)))))      
         (handler-case
+            ;; In theory we could get a stream directly from
+            ;; hunchnetoot and pass this on to with-program, but SBCLs
+            ;; before what should become 1.1.15 don't allow us to read
+            ;; from streams that have an element type that is a
+            ;; subtype of (unsigned-byte 8). For the moment do the
+            ;; slow and safe thing of reading the data, making a new
+            ;; in-memory-input-stream and passing that on to the CGI
+            ;; script.
             (with-program (path nil env
                                 :output process-output
                                 :input (when post-data
