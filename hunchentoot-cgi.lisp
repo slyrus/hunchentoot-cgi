@@ -94,9 +94,9 @@ type via the file's suffix."
                        #+nil ("REMOTE_IDENT" . "FIXME!")
                          
                        #+nil ("AUTH_TYPE" . "FIX")
-                       ("HTTP_HOST" . ,(tbnl:acceptor-address tbnl:*acceptor*))
+                       ("HTTP_HOST" . ,(tbnl:host))
                        ("REQUEST_URI" . ,(tbnl:request-uri*))
-                       ("SERVER_ADDR" . ,(tbnl:acceptor-address tbnl:*acceptor*))
+                       ("SERVER_ADDR" . ,(tbnl:local-addr*))
                        ("HTTP_USER_AGENT" . ,(tbnl:user-agent))
                        ("HTTP_REFERER" . ,(tbnl:referer))
                        ("CONTENT_LENGTH" . ,input-length)
