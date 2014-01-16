@@ -126,6 +126,7 @@ type via the file's suffix."
             (error error)))))))
 
 (defun create-cgi-dispatcher-and-handler (uri-prefix base-path &optional content-type)
+  (declare (ignore content-type))
   (unless (and (stringp uri-prefix)
                (plusp (length uri-prefix))
                (char= (char uri-prefix (1- (length uri-prefix))) #\/))
@@ -145,6 +146,7 @@ type via the file's suffix."
                                  always (stringp component))))
                (setf (return-code*) +http-forbidden+)
                (abort-request-handler))
-             (handle-cgi-script (merge-pathnames script-path base-path) content-type))))
+             (handle-cgi-script (merge-pathnames script-path base-path)
+                                (tbnl:header-in :content-type tbnl:*request*)))))
     (create-prefix-dispatcher uri-prefix #'handler)))
 
